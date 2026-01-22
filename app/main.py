@@ -1,8 +1,14 @@
-from fastapi import FastAPI,HTTPException,status,Response
+from fastapi import FastAPI,HTTPException,status,Response,Depends
 from pydantic import BaseModel,HttpUrl
 import psycopg2 
 from psycopg2.extras import RealDictCursor
 import time
+from .import models
+from sqlalchemy.orm import session
+from . database import engine , get_db
+
+models.Base.metadata.create_all(bind=engine)
+
 
 app = FastAPI()
 
@@ -93,3 +99,8 @@ def update_course(id: int, course: Course):
         )
 
     return {"updated_course": updated_course}
+
+
+@app.get("/coursealchemy")
+def course (db:session = Depends(get_db)):
+       return {"status" : "sqlalchemy ORM working"}
