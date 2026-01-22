@@ -4,7 +4,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
 from .import models
-from sqlalchemy.orm import session
+from sqlalchemy.orm import Session
 from . database import engine , get_db
 
 models.Base.metadata.create_all(bind=engine)
@@ -39,16 +39,36 @@ def create_post(post:Course):
        conn.commit()
        return {"Data": new_post}
 
+# using sqlalchemi
+@app.post("/courses")
+def create_course(course:Course, db :Session = Depends(get_db)):
+       new_course = models.Course(
+              name = course.name,
+              instructor = course.instructor,
+              duration = course.duration,
+              website = str(course.website)
+       )
+       db.add(new_course)
+       db.commit()
+       db.refresh(new_course)
+       return {"course: " , new_course}
+
 @app.get("/")
 def aiquest():
     cursor.execute(""" SELECT * FROM course """)
     data = cursor.fetchall()
     return {"Data": data}
 
+# using sqlalchemy
+@app.get("/coursealchemy")
+def course (db:Session = Depends(get_db)):
+       course = db.query(models.Course).all()
+       return {"Course" : course}
+
 @app.get("/course")
 def studyMart():
-        return {"Course" : "Django and backend developement with python "}
-    
+        return {"Course" : "Django and backend developement with python "}  
+
 @app.get("/django/api")
 def django():
         return {"type" : "Basic to Advance"}
@@ -60,10 +80,23 @@ def get_course(id:int):
        if not course:
               raise HTTPException(
                      status_code = status.HTTP_404_NOT_FOUND,
-                     details = f"course with id:{id} was not found"
+                     detail = f"course with id:{id} was not found"
               )
        return{"course_details": course}
 
+# using sqlalchemy
+@app.get("/coursealchemy/{id}")
+def my_course (id:int, db:Session = Depends(get_db)):
+       course = db.query(models.Course).filter(models.Course.id == id).first()
+       if not course:
+              raise HTTPException(
+                     status_code = status.HTTP_404_NOT_FOUND,
+                     detail = f"course with id:{id} was not found"
+              )
+       return{"course_details": course}
+
+
+# using raw SQL
 @app.delete("/course/{id}" , status_code=status.HTTP_204_NO_CONTENT)
 def delete_course(id:int):
        cursor.execute("""DELETE FROM course where id = %s returning *""", (str(id),))
@@ -73,8 +106,7 @@ def delete_course(id:int):
               raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"course with id :{id} does not exist")
        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-from fastapi import HTTPException, status, Response
-
+# using raw sql
 @app.put("/course/{id}")
 def update_course(id: int, course: Course):
 
@@ -94,13 +126,25 @@ def update_course(id: int, course: Course):
 
     if updated_course is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Course with id {id} does not exist"
+            status_code=status.HTTP_404_NOT_FOUND, detail=f"Course with id {id} does not exist"
         )
-
     return {"updated_course": updated_course}
 
+# using aqlalchemy
+@app.put("/rafikul_course/{id}")
+def updated_rafikul_course (id:int, updated_course:Course , db:Session = Depends(get_db)):
+       course_query = db.query(models.Course).filter(models.Course.id == id)
+       course = course_query.first()
+       if not course:
+              raise HTTPException(
+                     status_code = status.HTTP_404_NOT_FOUND,
+                     detail = f"course with id:{id} was not found"
+              )
+       update_data = updated_course.model_dump()
+       update_data ["website"] = str(update_data["website"])
+       course_query.update(update_data,synchronize_session=False)
+       db.commit()
+       db.refresh(course)
+       return{"course_details": course}
 
-@app.get("/coursealchemy")
-def course (db:session = Depends(get_db)):
-       return {"status" : "sqlalchemy ORM working"}
+       
