@@ -157,4 +157,11 @@ def updated_rafikul_course (id:int, updated_course:schemas.CourseCreate , db:Ses
        db.refresh(course)
        return course
 
-       
+
+@app.post("/users" , status_code=status.HTTP_201_CREATED , response_model=schemas.UserRes)
+def rafikul_user(user:schemas.UserCreate, db:Session=Depends(get_db)):
+      new_user = models.User(**user.model_dump())
+      db.add(new_user)
+      db.commit()
+      db.refresh(new_user)
+      return new_user
