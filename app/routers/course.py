@@ -5,11 +5,12 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from typing import List
 
-router = APIRouter()
+router = APIRouter(prefix="/course",
+                   tags=['Course'])
 
 
 # using sqlalchemi
-@router.post("/courses", response_model=schemas.CourseResponse)
+@router.post("/", response_model=schemas.CourseResponse)
 def create_course(course:schemas.CourseCreate, db :Session = Depends(get_db)):
        new_course = models.Course(** course.model_dump())
        new_course.website = str(course.website)
@@ -21,14 +22,14 @@ def create_course(course:schemas.CourseCreate, db :Session = Depends(get_db)):
 
 
 # using sqlalchemy
-@router.get("/coursealchemy" , response_model=List[schemas.CourseResponse])
+@router.get("/" , response_model=List[schemas.CourseResponse])
 def course (db:Session = Depends(get_db)):
        course = db.query(models.Course).all()
        return course
 
 
 # using sqlalchemy
-@router.get("/coursealchemy/{id}" , response_model=schemas.CourseResponse)
+@router.get("/{id}" , response_model=schemas.CourseResponse)
 def my_course (id:int, db:Session = Depends(get_db)):
        course = db.query(models.Course).filter(models.Course.id == id).first()
        if not course:
@@ -39,7 +40,7 @@ def my_course (id:int, db:Session = Depends(get_db)):
        return course
 
 # using sqlalchemy
-@router.delete("/rafikul_course/{id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_rafikul_course(id: int, db: Session = Depends(get_db)):
     course_query = db.query(models.Course).filter(models.Course.id == id)
     course = course_query.first()
@@ -55,8 +56,8 @@ def delete_rafikul_course(id: int, db: Session = Depends(get_db)):
 
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-# using aqlalchemy
-@router.put("/rafikul_course/{id}" , response_model=schemas.CourseResponse)
+# using sqlalchemy
+@router.put("/{id}" , response_model=schemas.CourseResponse)
 def updated_rafikul_course (id:int, updated_course:schemas.CourseCreate , db:Session = Depends(get_db)):
        course_query = db.query(models.Course).filter(models.Course.id == id)
        course = course_query.first()
