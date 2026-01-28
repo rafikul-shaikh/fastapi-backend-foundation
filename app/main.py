@@ -3,12 +3,12 @@ from pydantic import BaseModel,HttpUrl
 import psycopg2 
 from psycopg2.extras import RealDictCursor
 import time
-from .import models
+from app import models
 from sqlalchemy.orm import Session
-from . database import engine , get_db
+from app.database import engine, get_db
+
 
 models.Base.metadata.create_all(bind=engine)
-
 
 app = FastAPI()
 
@@ -105,6 +105,24 @@ def delete_course(id:int):
        if delete_course == None:
               raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = f"course with id :{id} does not exist")
        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+# using sqlalchemy
+@app.delete("/rafikul_course/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_rafikul_course(id: int, db: Session = Depends(get_db)):
+    course_query = db.query(models.Course).filter(models.Course.id == id)
+    course = course_query.first()
+
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"course with id:{id} was not found"
+        )
+
+    course_query.delete(synchronize_session=False)
+    db.commit()
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 
 # using raw sql
 @app.put("/course/{id}")
