@@ -4,6 +4,7 @@ from app import models,schemas
 from sqlalchemy.orm import Session
 from app.database import get_db
 from typing import List
+from app import oauth2
 
 router = APIRouter(prefix="/course",
                    tags=['Course'])
@@ -11,7 +12,7 @@ router = APIRouter(prefix="/course",
 
 # using sqlalchemi
 @router.post("/", response_model=schemas.CourseResponse)
-def create_course(course:schemas.CourseCreate, db :Session = Depends(get_db)):
+def create_course(course:schemas.CourseCreate, db :Session = Depends(get_db), current_user :models.User = Depends(oauth2.get_current_user)):
        new_course = models.Course(** course.model_dump())
        new_course.website = str(course.website)
        db.add(new_course)
@@ -23,14 +24,14 @@ def create_course(course:schemas.CourseCreate, db :Session = Depends(get_db)):
 
 # using sqlalchemy
 @router.get("/" , response_model=List[schemas.CourseResponse])
-def course (db:Session = Depends(get_db)):
+def course (db:Session = Depends(get_db), current_user :models.User = Depends(oauth2.get_current_user)):
        course = db.query(models.Course).all()
        return course
 
 
 # using sqlalchemy
 @router.get("/{id}" , response_model=schemas.CourseResponse)
-def my_course (id:int, db:Session = Depends(get_db)):
+def my_course (id:int, db:Session = Depends(get_db) , current_user :models.User = Depends(oauth2.get_current_user)):
        course = db.query(models.Course).filter(models.Course.id == id).first()
        if not course:
               raise HTTPException(
@@ -41,7 +42,7 @@ def my_course (id:int, db:Session = Depends(get_db)):
 
 # using sqlalchemy
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_rafikul_course(id: int, db: Session = Depends(get_db)):
+def delete_rafikul_course(id: int, db: Session = Depends(get_db), current_user :models.User = Depends(oauth2.get_current_user)):
     course_query = db.query(models.Course).filter(models.Course.id == id)
     course = course_query.first()
 
@@ -58,7 +59,8 @@ def delete_rafikul_course(id: int, db: Session = Depends(get_db)):
 
 # using sqlalchemy
 @router.put("/{id}" , response_model=schemas.CourseResponse)
-def updated_rafikul_course (id:int, updated_course:schemas.CourseCreate , db:Session = Depends(get_db)):
+def updated_rafikul_course (id:int, updated_course:schemas.CourseCreate , db:Session = Depends(get_db)
+       , current_user :models.User = Depends(oauth2.get_current_user)):
        course_query = db.query(models.Course).filter(models.Course.id == id)
        course = course_query.first()
        if not course:
